@@ -383,7 +383,7 @@
     }
 
     // Helpers
-    const getSpeed = (lvl) => Math.max(50, 800 - (lvl - 1) * 120);
+    const getSpeed = (lvl) => Math.max(100, 1000 - (lvl - 1) * 50);
     const randomPiece = () => {
       const name = PIECE_NAMES[Math.floor(Math.random() * PIECE_NAMES.length)];
       return { name, shape: TETROMINOES[name].shape.map(r => [...r]), color: TETROMINOES[name].color };
