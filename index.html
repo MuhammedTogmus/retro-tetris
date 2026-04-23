@@ -107,21 +107,30 @@
     
     @media (max-width: 480px) {
       .console-wrapper { width: 100vw; height: 100dvh; justify-content: flex-start; }
-      .console-body { border-radius: 0; height: 100%; display: flex; flex-direction: column; padding: 12px 10px 16px; }
-      .console-brand { margin-bottom: 6px; } .console-brand h1 { font-size: 9px; }
-      .screen-housing { flex: 1; display: flex; flex-direction: column; } .screen-inner { flex: 1; padding: 6px; }
-      .side-panel { width: 72px; min-width: 72px; gap: 8px; } .panel-value { font-size: 8px; } .panel-label { font-size: 5px; }
-      .next-piece-grid { width: 48px; height: 48px; }
-      .controls-section { margin-top: 10px; padding: 0 4px; }
-      .dpad-container { width: 105px; height: 105px; } .dpad-btn { width: 35px; height: 35px; font-size: 16px; }
-      .dpad-up { left: 35px; } .dpad-down { left: 35px; } .dpad-right { right: 0; } .dpad-center { top: 35px; left: 35px; }
-      .rotate-btn { width: 56px; height: 56px; font-size: 6px; } .drop-btn { width: 42px; height: 42px; font-size: 5px; }
-      .small-buttons { margin-top: 8px; } .speaker-grille { padding: 8px 16px 0; }
+      .console-body { border-radius: 0; height: 100%; display: flex; flex-direction: column; padding: 8px 8px 12px; }
+      .console-brand { margin-bottom: 2px; } .console-brand h1 { font-size: 8px; }
+      .power-led-container { margin-top: 0; margin-bottom: 2px; }
+      .screen-housing { flex: 1; display: flex; flex-direction: column; min-height: 0; padding: 6px; } 
+      .screen-inner { flex: 1; padding: 4px; min-height: 0; }
+      .game-area { display: flex; justify-content: center; align-items: stretch; height: 100%; }
+      .grid-container { width: auto; height: 100%; max-height: 100%; aspect-ratio: 10 / 20; }
+      .side-panel { width: 64px; min-width: 64px; gap: 6px; padding: 2px; } .panel-value { font-size: 7px; } .panel-label { font-size: 5px; margin-bottom: 2px; }
+      .next-piece-grid { width: 40px; height: 40px; }
+      .controls-section { margin-top: 8px; padding: 0 4px; align-items: center; }
+      .dpad-container { width: 96px; height: 96px; } .dpad-btn { width: 32px; height: 32px; font-size: 15px; }
+      .dpad-up { left: 32px; } .dpad-down { left: 32px; } .dpad-right { right: 0; } .dpad-center { top: 32px; left: 32px; }
+      .action-buttons { gap: 8px; }
+      .rotate-btn { width: 50px; height: 50px; font-size: 5px; } .drop-btn { width: 38px; height: 38px; font-size: 4px; }
+      .small-buttons { margin-top: 6px; gap: 12px; } .small-btn { padding: 4px 10px; font-size: 5px; }
+      .speaker-grille { padding: 4px 10px 0; }
     }
     @media (max-width: 360px) {
-      .dpad-container { width: 90px; height: 90px; } .dpad-btn { width: 30px; height: 30px; font-size: 14px; }
-      .dpad-up { left: 30px; } .dpad-down { left: 30px; } .dpad-center { top: 30px; left: 30px; }
-      .rotate-btn { width: 50px; height: 50px; } .drop-btn { width: 38px; height: 38px; }
+      .console-body { padding: 4px 4px 6px; }
+      .dpad-container { width: 84px; height: 84px; } .dpad-btn { width: 28px; height: 28px; font-size: 13px; }
+      .dpad-up { left: 28px; } .dpad-down { left: 28px; } .dpad-center { top: 28px; left: 28px; }
+      .rotate-btn { width: 46px; height: 46px; } .drop-btn { width: 34px; height: 34px; }
+      .side-panel { width: 55px; min-width: 55px; } .next-piece-grid { width: 36px; height: 36px; }
+      .screen-housing { padding: 4px; } .screen-inner { padding: 2px; }
     }
   </style>
 </head>
