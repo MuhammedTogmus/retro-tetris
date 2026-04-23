@@ -107,28 +107,28 @@
     
     @media (max-width: 480px) {
       .console-wrapper { width: 100vw; height: 100dvh; justify-content: flex-start; }
-      .console-body { border-radius: 0; height: 100%; display: flex; flex-direction: column; padding: 8px 8px 12px; }
+      .console-body { border-radius: 0; height: 100%; display: flex; flex-direction: column; padding: 6px 6px 8px; }
       .console-brand { margin-bottom: 2px; } .console-brand h1 { font-size: 8px; }
       .power-led-container { margin-top: 0; margin-bottom: 2px; }
-      .screen-housing { flex: 1; display: flex; flex-direction: column; min-height: 0; padding: 6px; } 
+      .screen-housing { flex: 1; display: flex; flex-direction: column; min-height: 0; padding: 4px; } 
       .screen-inner { flex: 1; padding: 4px; min-height: 0; }
       .game-area { display: flex; justify-content: center; align-items: stretch; height: 100%; }
       .grid-container { width: auto; height: 100%; max-height: 100%; aspect-ratio: 10 / 20; }
-      .side-panel { width: 64px; min-width: 64px; gap: 6px; padding: 2px; } .panel-value { font-size: 7px; } .panel-label { font-size: 5px; margin-bottom: 2px; }
+      .side-panel { width: 60px; min-width: 60px; gap: 6px; padding: 2px; } .panel-value { font-size: 7px; } .panel-label { font-size: 5px; margin-bottom: 2px; }
       .next-piece-grid { width: 40px; height: 40px; }
-      .controls-section { margin-top: 8px; padding: 0 4px; align-items: center; }
-      .dpad-container { width: 96px; height: 96px; } .dpad-btn { width: 32px; height: 32px; font-size: 15px; }
-      .dpad-up { left: 32px; } .dpad-down { left: 32px; } .dpad-right { right: 0; } .dpad-center { top: 32px; left: 32px; }
-      .action-buttons { gap: 8px; }
-      .rotate-btn { width: 50px; height: 50px; font-size: 5px; } .drop-btn { width: 38px; height: 38px; font-size: 4px; }
-      .small-buttons { margin-top: 6px; gap: 12px; } .small-btn { padding: 4px 10px; font-size: 5px; }
-      .speaker-grille { padding: 4px 10px 0; }
+      .controls-section { margin-top: 6px; padding: 0 4px; align-items: center; }
+      .dpad-container { width: 114px; height: 114px; } .dpad-btn { width: 38px; height: 38px; font-size: 18px; }
+      .dpad-up { left: 38px; } .dpad-down { left: 38px; } .dpad-right { right: 0; } .dpad-center { top: 38px; left: 38px; }
+      .action-buttons { gap: 10px; }
+      .rotate-btn { width: 60px; height: 60px; font-size: 6px; } .drop-btn { width: 46px; height: 46px; font-size: 5px; }
+      .small-buttons { margin-top: 4px; gap: 12px; } .small-btn { padding: 4px 10px; font-size: 5px; }
+      .speaker-grille { padding: 2px 10px 0; }
     }
     @media (max-width: 360px) {
       .console-body { padding: 4px 4px 6px; }
-      .dpad-container { width: 84px; height: 84px; } .dpad-btn { width: 28px; height: 28px; font-size: 13px; }
-      .dpad-up { left: 28px; } .dpad-down { left: 28px; } .dpad-center { top: 28px; left: 28px; }
-      .rotate-btn { width: 46px; height: 46px; } .drop-btn { width: 34px; height: 34px; }
+      .dpad-container { width: 105px; height: 105px; } .dpad-btn { width: 35px; height: 35px; font-size: 16px; }
+      .dpad-up { left: 35px; } .dpad-down { left: 35px; } .dpad-center { top: 35px; left: 35px; }
+      .rotate-btn { width: 54px; height: 54px; } .drop-btn { width: 40px; height: 40px; }
       .side-panel { width: 55px; min-width: 55px; } .next-piece-grid { width: 36px; height: 36px; }
       .screen-housing { padding: 4px; } .screen-inner { padding: 2px; }
     }
@@ -420,6 +420,52 @@
       }
     }
 
+    // Audio Context and Synth
+    let audioCtx = null;
+    const initAudio = () => { if (!audioCtx) { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } };
+    const playTone = (freq, type, duration, vol=0.1, sweep=0) => {
+      if (!audioCtx) return;
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+      const osc = audioCtx.createOscillator();
+      const gainNode = audioCtx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+      if (sweep) osc.frequency.exponentialRampToValueAtTime(freq * sweep, audioCtx.currentTime + duration);
+      gainNode.gain.setValueAtTime(vol, audioCtx.currentTime);
+      gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+      osc.connect(gainNode);
+      gainNode.connect(audioCtx.destination);
+      osc.start();
+      osc.stop(audioCtx.currentTime + duration);
+    };
+
+    const playSound = (sound) => {
+      if (!audioCtx) return;
+      switch(sound) {
+        case 'move': playTone(150, 'square', 0.05, 0.05); break;
+        case 'rotate': playTone(250, 'square', 0.08, 0.05); break;
+        case 'drop': playTone(400, 'square', 0.15, 0.08, 0.2); break;
+        case 'lock': playTone(100, 'square', 0.1, 0.05); break;
+        case 'clear':
+          playTone(400, 'square', 0.1, 0.1);
+          setTimeout(() => playTone(600, 'square', 0.1, 0.1), 100);
+          setTimeout(() => playTone(800, 'square', 0.2, 0.1), 200);
+          break;
+        case 'levelUp':
+          playTone(300, 'square', 0.1, 0.1);
+          setTimeout(() => playTone(400, 'square', 0.1, 0.1), 100);
+          setTimeout(() => playTone(500, 'square', 0.1, 0.1), 200);
+          setTimeout(() => playTone(800, 'square', 0.3, 0.1), 300);
+          break;
+        case 'gameover':
+          playTone(300, 'sawtooth', 0.3, 0.1);
+          setTimeout(() => playTone(250, 'sawtooth', 0.3, 0.1), 300);
+          setTimeout(() => playTone(200, 'sawtooth', 0.3, 0.1), 600);
+          setTimeout(() => playTone(150, 'sawtooth', 0.6, 0.1), 900);
+          break;
+      }
+    };
+
     // Logic
     function showScorePopup(points) {
       let popup = document.createElement('div');
@@ -444,6 +490,7 @@
       for (let r=0; r<ROWS; r++) if (board[r].every(c => c !== EMPTY)) completed.push(r);
 
       if (completed.length > 0) {
+        playSound('clear');
         clearingRows = completed;
         render();
 
@@ -452,7 +499,7 @@
         showScorePopup(pts);
 
         let nLevel = Math.floor(lines / 10) + 1;
-        if (nLevel !== level) { level = nLevel; restartInterval(); }
+        if (nLevel !== level) { level = nLevel; playSound('levelUp'); restartInterval(); }
 
         setTimeout(() => {
           for (let i = completed.length - 1; i >= 0; i--) {
@@ -464,6 +511,7 @@
           render();
         }, 400);
       } else {
+        playSound('lock');
         spawnPiece();
         render();
       }
@@ -475,6 +523,7 @@
       pos = { row: 0, col: Math.floor((COLS - currentPiece.shape[0].length) / 2) };
       if (!isValidPos(board, currentPiece.shape, pos.row, pos.col)) {
         gameState = 'gameover';
+        playSound('gameover');
         clearInterval(dropInterval);
       }
     }
@@ -483,6 +532,7 @@
       if (gameState !== 'playing' || clearingRows.length > 0) return;
       if (isValidPos(board, currentPiece.shape, pos.row + dRow, pos.col + dCol)) {
         pos.row += dRow; pos.col += dCol;
+        if (dRow === 0 || dCol === 0) playSound('move');
         render();
       } else if (dRow > 0 && dCol === 0) {
         lockPiece();
@@ -495,6 +545,7 @@
       for (let [dx, dy] of WALL_KICKS) {
         if (isValidPos(board, rotated, pos.row + dy, pos.col + dx)) {
           currentPiece.shape = rotated; pos.row += dy; pos.col += dx;
+          playSound('rotate');
           render(); return;
         }
       }
@@ -505,6 +556,7 @@
       let ghostR = pos.row;
       while (isValidPos(board, currentPiece.shape, ghostR + 1, pos.col)) ghostR++;
       pos.row = ghostR;
+      playSound('drop');
       lockPiece();
     }
 
@@ -516,6 +568,7 @@
     }
 
     function startGame() {
+      initAudio();
       board = Array.from({length: ROWS}, () => Array(COLS).fill(EMPTY));
       score = 0; lines = 0; level = 1; clearingRows = [];
       nextPiece = randomPiece();
