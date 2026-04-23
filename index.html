@@ -292,7 +292,7 @@
 
     const fetchLeaderboard = async () => {
       try {
-        const res = await fetch(`https://dreamlo.com/lb/${DREAMLO_PUBLIC}/json?t=${Date.now()}`);
+        const res = await fetch(`http://dreamlo.com/lb/${DREAMLO_PUBLIC}/json?t=${Date.now()}`);
         const data = await res.json();
         let entries = [];
         if (data && data.dreamlo && data.dreamlo.leaderboard && data.dreamlo.leaderboard.entry) {
@@ -314,7 +314,7 @@
       if (s === 0) return;
       try {
         // Optimistic UI update can be done here, but Dreamlo updates fast enough
-        await fetch(`https://dreamlo.com/lb/${DREAMLO_PRIVATE}/add/${encodeURIComponent(name || 'ANON')}/${s}`);
+        await fetch(`http://dreamlo.com/lb/${DREAMLO_PRIVATE}/add/${encodeURIComponent(name || 'ANON')}/${s}`);
         await fetchLeaderboard();
       } catch (err) {
         console.error('Score save error:', err);
