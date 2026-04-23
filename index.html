@@ -284,27 +284,56 @@
     let clearingRows = [];
     let currentPlayer = '';
 
-    // Leaderboard
-    const getLeaderboard = () => JSON.parse(localStorage.getItem('tetris_lb') || '[]');
-    const saveScore = (name, s) => {
-      if (s === 0) return; // Don't save 0 scores
-      let lb = getLeaderboard();
-      lb.push({ name: name || 'ANON', score: s });
-      lb.sort((a,b) => b.score - a.score);
-      lb = lb.slice(0, 5);
-      localStorage.setItem('tetris_lb', JSON.stringify(lb));
-      renderLeaderboards();
+    // Leaderboard (Global via Dreamlo)
+    const DREAMLO_PUBLIC = '69ea46838f40bb1068690cbe';
+    const DREAMLO_PRIVATE = '2sddn-sgkU6auJuID3wdDgquvWnlX74Ea563vg3-nXYQ';
+    let globalLeaderboard = [];
+    let lbLoaded = false;
+
+    const fetchLeaderboard = async () => {
+      try {
+        const res = await fetch(`https://dreamlo.com/lb/${DREAMLO_PUBLIC}/json?t=${Date.now()}`);
+        const data = await res.json();
+        let entries = [];
+        if (data && data.dreamlo && data.dreamlo.leaderboard && data.dreamlo.leaderboard.entry) {
+          let raw = data.dreamlo.leaderboard.entry;
+          if (!Array.isArray(raw)) raw = [raw];
+          entries = raw.map(e => ({ name: e.name, score: parseInt(e.score) }));
+        }
+        globalLeaderboard = entries.slice(0, 5);
+        lbLoaded = true;
+        renderLeaderboards();
+      } catch (err) {
+        console.error('Leaderboard fetch error:', err);
+        lbLoaded = true;
+        renderLeaderboards();
+      }
     };
+
+    const saveScore = async (name, s) => {
+      if (s === 0) return;
+      try {
+        // Optimistic UI update can be done here, but Dreamlo updates fast enough
+        await fetch(`https://dreamlo.com/lb/${DREAMLO_PRIVATE}/add/${encodeURIComponent(name || 'ANON')}/${s}`);
+        await fetchLeaderboard();
+      } catch (err) {
+        console.error('Score save error:', err);
+      }
+    };
+
     const renderLeaderboards = () => {
-      const lb = getLeaderboard();
+      const lb = globalLeaderboard;
       const htmlGo = lb.map((i, idx) => `<li class="lb-item"><span>${idx+1}. ${i.name}</span><span>${i.score}</span></li>`).join('');
       const htmlSide = lb.map((i, idx) => `<li style="display:flex; justify-content:space-between; margin-bottom:5px; opacity:0.9;"><span>${idx+1}.${i.name.substring(0,5)}</span><span style="color:#ffea00">${i.score}</span></li>`).join('');
       
+      const emptyMsgGo = lbLoaded ? '<li class="lb-item" style="text-align:center;">KAYIT YOK</li>' : '<li class="lb-item" style="text-align:center; color:#00e5ff;">YÜKLENİYOR...</li>';
+      const emptyMsgSide = lbLoaded ? '<li style="text-align:center; opacity:0.5;">YOK</li>' : '<li style="text-align:center; opacity:0.8; color:#00e5ff;">...</li>';
+
       const elGo = document.getElementById('lb-list-go');
-      if (elGo) elGo.innerHTML = htmlGo || '<li class="lb-item" style="text-align:center;">KAYIT YOK</li>';
+      if (elGo) elGo.innerHTML = htmlGo || emptyMsgGo;
       
       const elSide = document.getElementById('lb-list-side');
-      if (elSide) elSide.innerHTML = htmlSide || '<li style="text-align:center; opacity:0.5;">KAYIT YOK</li>';
+      if (elSide) elSide.innerHTML = htmlSide || emptyMsgSide;
     };
 
     // DOM Elements
@@ -673,7 +702,8 @@
     document.getElementById('start-prompt-btn').addEventListener('click', startGame);
 
     // Initial render
-    renderLeaderboards();
+    renderLeaderboards(); // To show loading state initially
+    fetchLeaderboard();
     render();
   </script>
 </body>
