@@ -88,9 +88,10 @@
     .start-title { font-family: var(--font-pixel); font-size: 22px; color: var(--text-lcd); text-shadow: 0 0 15px rgba(155, 188, 15, 0.6); margin-bottom: 8px; }
     .start-subtitle { font-family: var(--font-pixel); font-size: 7px; color: var(--text-lcd); opacity: 0.6; margin-bottom: 30px; }
     .start-prompt { font-family: var(--font-pixel); font-size: 8px; color: var(--text-lcd); animation: blink 1.2s infinite; text-align: center; line-height: 2.2; white-space: pre-line; cursor: pointer; }
-    .name-input-container { margin: 10px 0 10px; display: flex; flex-direction: column; align-items: center; }
-    .name-input { background: rgba(15, 56, 15, 0.1); border: 2px solid var(--text-lcd); color: var(--text-lcd); font-family: var(--font-pixel); font-size: 8px; padding: 6px; text-align: center; width: 120px; text-transform: uppercase; outline: none; }
-    .name-input::placeholder { color: var(--text-lcd); opacity: 0.5; }
+    .name-input-container { margin: 20px 0; display: flex; flex-direction: column; align-items: center; }
+    .name-input { background: rgba(15, 56, 15, 0.1); border: 3px solid var(--text-lcd); color: var(--text-lcd); font-family: var(--font-pixel); font-size: 12px; padding: 12px; text-align: center; width: 160px; text-transform: uppercase; outline: none; border-radius: 4px; box-shadow: inset 0 0 5px rgba(0,0,0,0.5), 0 0 10px rgba(155, 188, 15, 0.2); transition: all 0.2s; }
+    .name-input:focus { border-color: #ffea00; box-shadow: inset 0 0 5px rgba(0,0,0,0.5), 0 0 15px rgba(255, 234, 0, 0.4); }
+    .name-input::placeholder { color: var(--text-lcd); opacity: 0.4; font-size: 10px; }
     .lb-section { margin-top: 10px; width: 85%; padding-top: 10px; border-top: 1px dashed rgba(15, 56, 15, 0.4); }
     .lb-title { font-family: var(--font-pixel); font-size: 6px; color: var(--text-lcd); text-align: center; margin-bottom: 6px; text-shadow: 0 0 5px rgba(155,188,15,0.4); }
     .lb-list { list-style: none; padding: 0; margin: 0; font-family: var(--font-pixel); font-size: 5px; color: var(--text-lcd); }
@@ -119,7 +120,8 @@
       .screen-inner { flex: 1; padding: 4px; min-height: 0; }
       .game-area { display: flex; justify-content: center; align-items: stretch; height: 100%; }
       .grid-container { width: auto; height: 100%; max-height: 100%; aspect-ratio: 10 / 20; }
-      .side-panel { width: 60px; min-width: 60px; gap: 6px; padding: 2px; } .panel-value { font-size: 7px; } .panel-label { font-size: 5px; margin-bottom: 2px; }
+      .side-panel { width: 68px; min-width: 68px; gap: 6px; padding: 2px; } .panel-value { font-size: 7px; } .panel-label { font-size: 5px; margin-bottom: 2px; }
+      .lb-list-side { font-size: 4.5px !important; }
       .next-piece-grid { width: 40px; height: 40px; }
       .controls-section { margin-top: 12px; padding: 0 8px; align-items: center; }
       .dpad-container { gap: 24px; } .dpad-btn { width: 56px; height: 56px; font-size: 24px; border-radius: 12px; }
@@ -166,10 +168,7 @@
 
             <div class="start-prompt" id="start-prompt-btn">BAŞLAMAK İÇİN<br>ENTER BASIN</div>
             
-            <div class="lb-section">
-              <div class="lb-title">TOP 5 SKOR</div>
-              <ul class="lb-list" id="lb-list-start"></ul>
-            </div>
+
 
             <div class="start-controls-info">
               <p>← → HAREKET · ↑ DÖNDÜR</p>
@@ -215,6 +214,10 @@
             <div class="panel-section">
               <div class="panel-label">SIRADAKİ</div>
               <div class="next-piece-grid" id="next-grid"></div>
+            </div>
+            <div class="panel-section" style="margin-top: auto; padding-top: 8px; border-top: 1px dashed rgba(15, 56, 15, 0.4);">
+              <div class="panel-label" style="color: #ffea00; margin-bottom: 6px;">TOP 5</div>
+              <ul class="lb-list-side" id="lb-list-side" style="list-style: none; padding: 0; margin: 0; font-family: var(--font-pixel); font-size: 5px; color: var(--text-lcd);"></ul>
             </div>
           </div>
   
@@ -294,9 +297,14 @@
     };
     const renderLeaderboards = () => {
       const lb = getLeaderboard();
-      const html = lb.map((i, idx) => `<li class="lb-item"><span>${idx+1}. ${i.name}</span><span>${i.score}</span></li>`).join('');
-      document.getElementById('lb-list-start').innerHTML = html || '<li class="lb-item" style="text-align:center;">KAYIT YOK</li>';
-      document.getElementById('lb-list-go').innerHTML = html || '<li class="lb-item" style="text-align:center;">KAYIT YOK</li>';
+      const htmlGo = lb.map((i, idx) => `<li class="lb-item"><span>${idx+1}. ${i.name}</span><span>${i.score}</span></li>`).join('');
+      const htmlSide = lb.map((i, idx) => `<li style="display:flex; justify-content:space-between; margin-bottom:5px; opacity:0.9;"><span>${idx+1}.${i.name.substring(0,5)}</span><span style="color:#ffea00">${i.score}</span></li>`).join('');
+      
+      const elGo = document.getElementById('lb-list-go');
+      if (elGo) elGo.innerHTML = htmlGo || '<li class="lb-item" style="text-align:center;">KAYIT YOK</li>';
+      
+      const elSide = document.getElementById('lb-list-side');
+      if (elSide) elSide.innerHTML = htmlSide || '<li style="text-align:center; opacity:0.5;">KAYIT YOK</li>';
     };
 
     // DOM Elements
