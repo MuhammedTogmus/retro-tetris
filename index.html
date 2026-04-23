@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Retro Tetris - Klasik Brick Game</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Silkscreen:wght@400;700&display=swap" rel="stylesheet">
+  <style>
+    /* ===== RESET & BASE ===== */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --font-pixel: 'Press Start 2P', 'Silkscreen', monospace;
+      --console-body: #c8b88a; --console-body-dark: #b5a578; --console-body-light: #d8ccaa;
+      --console-shadow: #8a7a52; --screen-bg: #0a1a0a; --screen-border: #2a2a2a;
+      --lcd-green: #3a5a1a; --lcd-green-light: #9bbc0f; --lcd-green-dark: #0f380f;
+      --text-lcd: #9bbc0f; --btn-dark: #2c2c2c; --btn-dark-highlight: #444;
+      --btn-red: #cc3333; --btn-red-highlight: #ee5555;
+    }
+    html, body { height: 100%; overflow: hidden; font-family: var(--font-pixel); background: #1a1a2e; background-image: radial-gradient(ellipse at 50% 30%, #16213e 0%, #0f0f23 70%); }
+    body { display: flex; justify-content: center; align-items: center; min-height: 100vh; min-height: 100dvh; }
+    
+    /* ===== CONSOLE CASING ===== */
+    .console-wrapper { position: relative; display: flex; flex-direction: column; align-items: center; width: 420px; max-width: 100vw; padding: 0; user-select: none; -webkit-user-select: none; touch-action: manipulation; }
+    .console-body { position: relative; width: 100%; background: linear-gradient(135deg, var(--console-body-light) 0%, var(--console-body) 30%, var(--console-body-dark) 100%); border-radius: 20px 20px 30px 30px; padding: 20px 18px 24px; box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 2px 8px rgba(0,0,0,0.3), inset 0 2px 4px rgba(255,255,255,0.3), inset 0 -2px 4px rgba(0,0,0,0.15); }
+    .console-brand { text-align: center; margin-bottom: 10px; }
+    .console-brand h1 { font-family: var(--font-pixel); font-size: 11px; color: #5a4a2a; letter-spacing: 4px; text-transform: uppercase; text-shadow: 0 1px 0 rgba(255,255,255,0.4); }
+    .console-brand .subtitle { font-family: var(--font-pixel); font-size: 7px; color: #8a7a52; letter-spacing: 2px; margin-top: 3px; }
+    
+    /* ===== SCREEN HOUSING ===== */
+    .screen-housing { position: relative; background: var(--screen-border); border-radius: 8px; padding: 10px; box-shadow: inset 0 3px 8px rgba(0,0,0,0.6), 0 1px 2px rgba(255,255,255,0.15); }
+    .screen-inner { position: relative; display: flex; gap: 2px; background: var(--screen-bg); border-radius: 4px; padding: 8px; overflow: hidden; min-height: 340px; box-shadow: inset 0 0 30px rgba(0,0,0,0.5), 0 0 2px rgba(155, 188, 15, 0.1); }
+    .screen-inner::after { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: repeating-linear-gradient(0deg, transparent, transparent 2px, rgba(0, 0, 0, 0.12) 2px, rgba(0, 0, 0, 0.12) 4px); pointer-events: none; z-index: 10; border-radius: 4px; }
+    .screen-inner::before { content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: radial-gradient(ellipse at center, rgba(155, 188, 15, 0.04) 0%, transparent 70%); pointer-events: none; z-index: 11; border-radius: 4px; }
+    
+    /* ===== GAME GRID ===== */
+    .game-area { flex: 1; position: relative; }
+    .grid-container { display: grid; grid-template-columns: repeat(10, 1fr); grid-template-rows: repeat(20, 1fr); gap: 1px; background: rgba(15, 56, 15, 0.3); border: 1px solid rgba(155, 188, 15, 0.1); aspect-ratio: 10 / 20; width: 100%; }
+    .cell { position: relative; aspect-ratio: 1; background: rgba(15, 56, 15, 0.15); border: 0.5px solid rgba(15, 56, 15, 0.08); }
+    .cell.filled { border: none; box-shadow: inset 1px 1px 0 rgba(255,255,255,0.25), inset -1px -1px 0 rgba(0,0,0,0.25); }
+    .cell.color-cyan { background: #00e5ff; box-shadow: inset 2px 2px 0 #66ffff, inset -2px -2px 0 #009db3; }
+    .cell.color-yellow { background: #ffea00; box-shadow: inset 2px 2px 0 #ffff5a, inset -2px -2px 0 #b3a400; }
+    .cell.color-purple { background: #d500f9; box-shadow: inset 2px 2px 0 #ea80fc, inset -2px -2px 0 #9500ae; }
+    .cell.color-green { background: #00e676; box-shadow: inset 2px 2px 0 #69f0ae, inset -2px -2px 0 #00a152; }
+    .cell.color-red { background: #ff1744; box-shadow: inset 2px 2px 0 #ff6e7a, inset -2px -2px 0 #b3002d; }
+    .cell.color-blue { background: #2979ff; box-shadow: inset 2px 2px 0 #75a7ff, inset -2px -2px 0 #1c54b2; }
+    .cell.color-orange { background: #ff9100; box-shadow: inset 2px 2px 0 #ffc246, inset -2px -2px 0 #b36500; }
+    .cell.ghost { background: rgba(155, 188, 15, 0.12) !important; box-shadow: inset 0 0 0 1px rgba(155, 188, 15, 0.25) !important; }
+    .cell.clearing { animation: lineFlash 0.4s ease-out; }
+    @keyframes lineFlash { 0% { background: #fff; box-shadow: 0 0 10px #fff; } 50% { background: #ffffcc; box-shadow: 0 0 6px #ffffcc; } 100% { background: transparent; box-shadow: none; } }
+    
+    /* ===== SIDE PANEL ===== */
+    .side-panel { width: 90px; min-width: 90px; display: flex; flex-direction: column; gap: 12px; padding: 4px 6px; }
+    .panel-section { text-align: center; }
+    .panel-label { font-family: var(--font-pixel); font-size: 6px; color: var(--text-lcd); letter-spacing: 1px; margin-bottom: 4px; opacity: 0.7; }
+    .panel-value { font-family: var(--font-pixel); font-size: 10px; color: var(--text-lcd); text-shadow: 0 0 6px rgba(155, 188, 15, 0.5); }
+    .next-piece-grid { display: grid; grid-template-columns: repeat(4, 1fr); grid-template-rows: repeat(4, 1fr); gap: 1px; width: 60px; height: 60px; margin: 4px auto; background: rgba(15, 56, 15, 0.2); border: 1px solid rgba(155, 188, 15, 0.1); }
+    .next-cell { aspect-ratio: 1; background: transparent; }
+    .next-cell.filled { box-shadow: inset 1px 1px 0 rgba(255,255,255,0.25), inset -1px -1px 0 rgba(0,0,0,0.25); }
+    
+    /* ===== CONTROLS ===== */
+    .controls-section { margin-top: 16px; display: flex; justify-content: space-between; align-items: flex-start; padding: 0 8px; }
+    .dpad-container { position: relative; width: 120px; height: 120px; }
+    .dpad-btn { position: absolute; width: 40px; height: 40px; background: var(--btn-dark); border: none; border-radius: 4px; color: #999; font-size: 18px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 0 3px 6px rgba(0,0,0,0.4), inset 0 1px 2px rgba(255,255,255,0.1); transition: all 0.08s; -webkit-tap-highlight-color: transparent; }
+    .dpad-btn:active, .dpad-btn.pressed { transform: translateY(2px); box-shadow: 0 1px 3px rgba(0,0,0,0.4), inset 0 1px 2px rgba(0,0,0,0.2); background: #222; }
+    .dpad-up { top: 0; left: 40px; } .dpad-down { bottom: 0; left: 40px; } .dpad-left { top: 40px; left: 0; } .dpad-right { top: 40px; right: 0; }
+    .dpad-center { top: 40px; left: 40px; background: var(--btn-dark); cursor: default; box-shadow: inset 0 1px 3px rgba(0,0,0,0.3); }
+    .action-buttons { display: flex; flex-direction: column; align-items: center; gap: 10px; }
+    .rotate-btn { width: 64px; height: 64px; border-radius: 50%; background: var(--btn-red); border: none; color: #fff; font-family: var(--font-pixel); font-size: 7px; letter-spacing: 1px; cursor: pointer; box-shadow: 0 4px 8px rgba(0,0,0,0.4), 0 1px 2px rgba(0,0,0,0.2), inset 0 2px 4px rgba(255,255,255,0.2), inset 0 -2px 4px rgba(0,0,0,0.2); transition: all 0.08s; -webkit-tap-highlight-color: transparent; }
+    .rotate-btn:active, .rotate-btn.pressed { transform: translateY(2px); box-shadow: 0 1px 3px rgba(0,0,0,0.4), inset 0 2px 4px rgba(0,0,0,0.2); background: #aa2222; }
+    .drop-btn { width: 48px; height: 48px; border-radius: 50%; background: var(--btn-dark); border: none; color: #999; font-family: var(--font-pixel); font-size: 6px; letter-spacing: 1px; cursor: pointer; box-shadow: 0 3px 6px rgba(0,0,0,0.4), inset 0 1px 2px rgba(255,255,255,0.1); transition: all 0.08s; -webkit-tap-highlight-color: transparent; }
+    .drop-btn:active, .drop-btn.pressed { transform: translateY(2px); box-shadow: 0 1px 3px rgba(0,0,0,0.4), inset 0 1px 2px rgba(0,0,0,0.2); background: #222; }
+    
+    .small-buttons { display: flex; gap: 16px; margin-top: 14px; justify-content: center; }
+    .small-btn { width: auto; padding: 6px 14px; background: #555; border: none; border-radius: 12px; color: #ccc; font-family: var(--font-pixel); font-size: 6px; letter-spacing: 1px; cursor: pointer; box-shadow: 0 2px 4px rgba(0,0,0,0.3); transition: all 0.08s; -webkit-tap-highlight-color: transparent; }
+    .small-btn:active { transform: translateY(1px); box-shadow: 0 1px 2px rgba(0,0,0,0.3); }
+    .speaker-grille { display: flex; gap: 3px; justify-content: flex-end; padding: 12px 20px 0; }
+    .speaker-line { width: 30px; height: 2px; background: rgba(0,0,0,0.15); border-radius: 1px; }
+    
+    /* ===== OVERLAYS ===== */
+    .game-over-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.85); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 20; border-radius: 4px; animation: fadeIn 0.5s ease-out; }
+    .game-over-text { font-family: var(--font-pixel); font-size: 12px; color: #ff1744; text-shadow: 0 0 10px rgba(255, 23, 68, 0.6); text-align: center; line-height: 2; animation: blink 1s infinite; }
+    .game-over-score { font-family: var(--font-pixel); font-size: 8px; color: var(--text-lcd); margin-top: 10px; text-shadow: 0 0 6px rgba(155, 188, 15, 0.5); }
+    .game-over-restart { font-family: var(--font-pixel); font-size: 7px; color: #ffea00; margin-top: 14px; animation: blink 1.5s infinite; cursor: pointer; }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+    
+    .start-screen { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: var(--screen-bg); display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 20; border-radius: 4px; }
+    .start-title { font-family: var(--font-pixel); font-size: 22px; color: var(--text-lcd); text-shadow: 0 0 15px rgba(155, 188, 15, 0.6); margin-bottom: 8px; }
+    .start-subtitle { font-family: var(--font-pixel); font-size: 7px; color: var(--text-lcd); opacity: 0.6; margin-bottom: 30px; }
+    .start-prompt { font-family: var(--font-pixel); font-size: 8px; color: var(--text-lcd); animation: blink 1.2s infinite; text-align: center; line-height: 2.2; white-space: pre-line; }
+    .start-controls-info { margin-top: 24px; text-align: center; }
+    .start-controls-info p { font-family: var(--font-pixel); font-size: 5px; color: var(--text-lcd); opacity: 0.4; line-height: 2.2; }
+    
+    .pause-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(10, 26, 10, 0.9); display: flex; align-items: center; justify-content: center; z-index: 20; border-radius: 4px; }
+    .pause-text { font-family: var(--font-pixel); font-size: 14px; color: var(--text-lcd); text-shadow: 0 0 10px rgba(155, 188, 15, 0.5); animation: blink 1s infinite; }
+    
+    /* ===== MISC ===== */
+    .power-led-container { display: flex; align-items: center; gap: 6px; margin-top: 8px; padding-left: 10px; }
+    .power-led { width: 6px; height: 6px; border-radius: 50%; background: #333; box-shadow: inset 0 1px 2px rgba(0,0,0,0.5); }
+    .power-led.on { background: #00e676; box-shadow: 0 0 6px rgba(0, 230, 118, 0.6), inset 0 0 2px rgba(255,255,255,0.3); }
+    .power-label { font-family: var(--font-pixel); font-size: 5px; color: #5a4a2a; letter-spacing: 2px; }
+    
+    .score-popup { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-family: var(--font-pixel); font-size: 14px; color: #ffea00; text-shadow: 0 0 10px rgba(255, 234, 0, 0.6); z-index: 15; pointer-events: none; animation: scoreFloat 0.8s ease-out forwards; }
+    @keyframes scoreFloat { 0% { opacity: 1; transform: translate(-50%, -50%) scale(1); } 100% { opacity: 0; transform: translate(-50%, -100%) scale(1.3); } }
+    
+    @media (max-width: 480px) {
+      .console-wrapper { width: 100vw; height: 100dvh; justify-content: flex-start; }
+      .console-body { border-radius: 0; height: 100%; display: flex; flex-direction: column; padding: 12px 10px 16px; }
+      .console-brand { margin-bottom: 6px; } .console-brand h1 { font-size: 9px; }
+      .screen-housing { flex: 1; display: flex; flex-direction: column; } .screen-inner { flex: 1; padding: 6px; }
+      .side-panel { width: 72px; min-width: 72px; gap: 8px; } .panel-value { font-size: 8px; } .panel-label { font-size: 5px; }
+      .next-piece-grid { width: 48px; height: 48px; }
+      .controls-section { margin-top: 10px; padding: 0 4px; }
+      .dpad-container { width: 105px; height: 105px; } .dpad-btn { width: 35px; height: 35px; font-size: 16px; }
+      .dpad-up { left: 35px; } .dpad-down { left: 35px; } .dpad-right { right: 0; } .dpad-center { top: 35px; left: 35px; }
+      .rotate-btn { width: 56px; height: 56px; font-size: 6px; } .drop-btn { width: 42px; height: 42px; font-size: 5px; }
+      .small-buttons { margin-top: 8px; } .speaker-grille { padding: 8px 16px 0; }
+    }
+    @media (max-width: 360px) {
+      .dpad-container { width: 90px; height: 90px; } .dpad-btn { width: 30px; height: 30px; font-size: 14px; }
+      .dpad-up { left: 30px; } .dpad-down { left: 30px; } .dpad-center { top: 30px; left: 30px; }
+      .rotate-btn { width: 50px; height: 50px; } .drop-btn { width: 38px; height: 38px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="console-wrapper">
+    <div class="console-body">
+      <!-- Brand -->
+      <div class="console-brand">
+        <h1>BRICK GAME</h1>
+        <div class="subtitle">TETRIS · 9999 IN 1</div>
+      </div>
+  
+      <!-- Power LED -->
+      <div class="power-led-container">
+        <div id="power-led" class="power-led"></div>
+        <span class="power-label">POWER</span>
+      </div>
+  
+      <!-- Screen -->
+      <div class="screen-housing">
+        <div class="screen-inner">
+          
+          <!-- Start Screen -->
+          <div id="start-screen" class="start-screen">
+            <div class="start-title">TETRIS</div>
+            <div class="start-subtitle">CLASSIC EDITION</div>
+            <div class="start-prompt">BAŞLAMAK İÇİN<br>ENTER BASIN</div>
+            <div class="start-controls-info">
+              <p>← → HAREKET · ↑ DÖNDÜR</p>
+              <p>↓ HIZLI · SPACE BIRAK</p>
+              <p>P DURAKLAT</p>
+            </div>
+          </div>
+  
+          <!-- Game Over Overlay -->
+          <div id="gameover-screen" class="game-over-overlay" style="display: none;">
+            <div class="game-over-text">OYUN<br>BİTTİ</div>
+            <div class="game-over-score">SKOR: <span id="go-score">0</span></div>
+            <div class="game-over-restart" id="btn-restart-go">YENİDEN BAŞLA</div>
+          </div>
+  
+          <!-- Pause Overlay -->
+          <div id="pause-screen" class="pause-overlay" style="display: none;">
+            <div class="pause-text">DURAKLADI</div>
+          </div>
+  
+          <!-- Game Area -->
+          <div class="game-area" id="game-area">
+            <div class="grid-container" id="grid-container"></div>
+          </div>
+  
+          <!-- Side Panel -->
+          <div class="side-panel" id="side-panel">
+            <div class="panel-section">
+              <div class="panel-label">SKOR</div>
+              <div class="panel-value" id="score-val">0</div>
+            </div>
+            <div class="panel-section">
+              <div class="panel-label">SEVİYE</div>
+              <div class="panel-value" id="level-val">1</div>
+            </div>
+            <div class="panel-section">
+              <div class="panel-label">SATIR</div>
+              <div class="panel-value" id="lines-val">0</div>
+            </div>
+            <div class="panel-section">
+              <div class="panel-label">SIRADAKİ</div>
+              <div class="next-piece-grid" id="next-grid"></div>
+            </div>
+          </div>
+  
+        </div>
+      </div>
+  
+      <!-- Controls -->
+      <div class="controls-section">
+        <div class="dpad-container">
+          <button class="dpad-btn dpad-up" id="btn-up">▲</button>
+          <button class="dpad-btn dpad-left" id="btn-left">◀</button>
+          <div class="dpad-btn dpad-center"></div>
+          <button class="dpad-btn dpad-right" id="btn-right">▶</button>
+          <button class="dpad-btn dpad-down" id="btn-down">▼</button>
+        </div>
+        <div class="action-buttons">
+          <button class="rotate-btn" id="btn-rotate">DÖNDÜR</button>
+          <button class="drop-btn" id="btn-drop">BIRAK</button>
+        </div>
+      </div>
+  
+      <!-- Small Buttons -->
+      <div class="small-buttons">
+        <button class="small-btn" id="btn-start">BAŞLAT</button>
+        <button class="small-btn" id="btn-pause" style="display: none;">DURAKLAT</button>
+        <button class="small-btn" id="btn-reset" style="display: none;">SIFIRLA</button>
+      </div>
+  
+      <!-- Speaker -->
+      <div class="speaker-grille">
+        <div class="speaker-line"></div>
+        <div class="speaker-line"></div>
+        <div class="speaker-line"></div>
+        <div class="speaker-line"></div>
+        <div class="speaker-line"></div>
+        <div class="speaker-line"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Constants
+    const ROWS = 20; const COLS = 10; const EMPTY = 0;
+    const PIECE_NAMES = ['I', 'O', 'T', 'S', 'Z', 'J', 'L'];
+    const LINE_SCORES = { 1: 100, 2: 300, 3: 500, 4: 800 };
+    const TETROMINOES = {
+      I: { shape: [[0,0,0,0], [1,1,1,1], [0,0,0,0], [0,0,0,0]], color: 'cyan' },
+      O: { shape: [[1,1], [1,1]], color: 'yellow' },
+      T: { shape: [[0,1,0], [1,1,1], [0,0,0]], color: 'purple' },
+      S: { shape: [[0,1,1], [1,1,0], [0,0,0]], color: 'green' },
+      Z: { shape: [[1,1,0], [0,1,1], [0,0,0]], color: 'red' },
+      J: { shape: [[1,0,0], [1,1,1], [0,0,0]], color: 'blue' },
+      L: { shape: [[0,0,1], [1,1,1], [0,0,0]], color: 'orange' }
+    };
+    const WALL_KICKS = [[0,0], [-1,0], [1,0], [0,-1], [-2,0], [2,0]];
+
+    // Game State
+    let board = [];
+    let currentPiece = null;
+    let pos = { row: 0, col: 0 };
+    let nextPiece = null;
+    let score = 0;
+    let lines = 0;
+    let level = 1;
+    let gameState = 'idle'; // idle | playing | paused | gameover
+    let dropInterval = null;
+    let clearingRows = [];
+
+    // DOM Elements
+    const gridContainer = document.getElementById('grid-container');
+    const nextGridContainer = document.getElementById('next-grid');
+    const scoreEl = document.getElementById('score-val');
+    const levelEl = document.getElementById('level-val');
+    const linesEl = document.getElementById('lines-val');
+    const goScoreEl = document.getElementById('go-score');
+    
+    const startScreen = document.getElementById('start-screen');
+    const gameoverScreen = document.getElementById('gameover-screen');
+    const pauseScreen = document.getElementById('pause-screen');
+    const powerLed = document.getElementById('power-led');
+    const btnStart = document.getElementById('btn-start');
+    const btnPause = document.getElementById('btn-pause');
+    const btnReset = document.getElementById('btn-reset');
+
+    // Create Grids
+    const gridCells = [];
+    for (let r = 0; r < ROWS; r++) {
+      let row = [];
+      for (let c = 0; c < COLS; c++) {
+        let cell = document.createElement('div');
+        cell.className = 'cell';
+        gridContainer.appendChild(cell);
+        row.push(cell);
+      }
+      gridCells.push(row);
+    }
+
+    const nextCells = [];
+    for (let r = 0; r < 4; r++) {
+      let row = [];
+      for (let c = 0; c < 4; c++) {
+        let cell = document.createElement('div');
+        cell.className = 'next-cell';
+        nextGridContainer.appendChild(cell);
+        row.push(cell);
+      }
+      nextCells.push(row);
+    }
+
+    // Helpers
+    const getSpeed = (lvl) => Math.max(80, 800 - (lvl - 1) * 70);
+    const randomPiece = () => {
+      const name = PIECE_NAMES[Math.floor(Math.random() * PIECE_NAMES.length)];
+      return { name, shape: TETROMINOES[name].shape.map(r => [...r]), color: TETROMINOES[name].color };
+    };
+    const rotateMatrix = (m) => {
+      const n = m.length; let rotated = Array.from({length: n}, () => Array(n).fill(0));
+      for (let r=0; r<n; r++) for (let c=0; c<n; c++) rotated[c][n-1-r] = m[r][c];
+      return rotated;
+    };
+    const isValidPos = (b, shape, row, col) => {
+      for (let r=0; r<shape.length; r++) {
+        for (let c=0; c<shape[r].length; c++) {
+          if (shape[r][c]) {
+            let nRow = row + r; let nCol = col + c;
+            if (nRow < 0 || nRow >= ROWS || nCol < 0 || nCol >= COLS) return false;
+            if (b[nRow][nCol] !== EMPTY) return false;
+          }
+        }
+      }
+      return true;
+    };
+
+    // Rendering
+    function render() {
+      // Screens
+      startScreen.style.display = gameState === 'idle' ? 'flex' : 'none';
+      gameoverScreen.style.display = gameState === 'gameover' ? 'flex' : 'none';
+      pauseScreen.style.display = gameState === 'paused' ? 'flex' : 'none';
+      
+      // Buttons
+      if (gameState === 'idle' || gameState === 'gameover') {
+        btnStart.style.display = 'inline-block';
+        btnPause.style.display = 'none';
+        btnReset.style.display = 'none';
+      } else {
+        btnStart.style.display = 'none';
+        btnPause.style.display = 'inline-block';
+        btnReset.style.display = 'inline-block';
+        btnPause.innerText = gameState === 'paused' ? 'DEVAM' : 'DURAKLAT';
+      }
+
+      // LED
+      powerLed.className = (gameState === 'playing' || gameState === 'paused') ? 'power-led on' : 'power-led';
+
+      if (gameState === 'idle') return;
+
+      // Stats
+      scoreEl.innerText = score;
+      levelEl.innerText = level;
+      linesEl.innerText = lines;
+      if (gameState === 'gameover') goScoreEl.innerText = score;
+
+      // Board
+      for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+          let cellColor = board[r][c];
+          let cName = 'cell';
+          if (cellColor !== EMPTY) cName += ` filled color-${cellColor}`;
+          if (clearingRows.includes(r)) cName += ' clearing';
+          gridCells[r][c].className = cName;
+        }
+      }
+
+      // Ghost & Current Piece
+      if (currentPiece && gameState !== 'gameover' && clearingRows.length === 0) {
+        let ghostR = pos.row;
+        while (isValidPos(board, currentPiece.shape, ghostR + 1, pos.col)) ghostR++;
+        
+        // Draw Ghost
+        if (ghostR !== null && ghostR !== pos.row) {
+          for (let r=0; r<currentPiece.shape.length; r++) {
+            for (let c=0; c<currentPiece.shape[r].length; c++) {
+              if (currentPiece.shape[r][c]) {
+                let br = ghostR + r; let bc = pos.col + c;
+                if (br >= 0 && br < ROWS && bc >= 0 && bc < COLS && board[br][bc] === EMPTY) {
+                  gridCells[br][bc].className = 'cell ghost';
+                }
+              }
+            }
+          }
+        }
+
+        // Draw Piece
+        for (let r=0; r<currentPiece.shape.length; r++) {
+          for (let c=0; c<currentPiece.shape[r].length; c++) {
+            if (currentPiece.shape[r][c]) {
+              let br = pos.row + r; let bc = pos.col + c;
+              if (br >= 0 && br < ROWS && bc >= 0 && bc < COLS) {
+                gridCells[br][bc].className = `cell filled color-${currentPiece.color}`;
+              }
+            }
+          }
+        }
+      }
+
+      // Next Piece
+      for (let r=0; r<4; r++) for (let c=0; c<4; c++) nextCells[r][c].className = 'next-cell';
+      if (nextPiece) {
+        let offsetR = Math.floor((4 - nextPiece.shape.length) / 2);
+        let offsetC = Math.floor((4 - nextPiece.shape[0].length) / 2);
+        for (let r=0; r<nextPiece.shape.length; r++) {
+          for (let c=0; c<nextPiece.shape[r].length; c++) {
+            if (nextPiece.shape[r][c]) {
+              nextCells[offsetR+r][offsetC+c].className = `next-cell filled color-${nextPiece.color}`;
+            }
+          }
+        }
+      }
+    }
+
+    // Logic
+    function showScorePopup(points) {
+      let popup = document.createElement('div');
+      popup.className = 'score-popup';
+      popup.innerText = '+' + points;
+      document.getElementById('game-area').appendChild(popup);
+      setTimeout(() => popup.remove(), 800);
+    }
+
+    function lockPiece() {
+      if (!currentPiece) return;
+      for (let r=0; r<currentPiece.shape.length; r++) {
+        for (let c=0; c<currentPiece.shape[r].length; c++) {
+          if (currentPiece.shape[r][c]) {
+            let br = pos.row + r; let bc = pos.col + c;
+            if (br >= 0 && br < ROWS && bc >= 0 && bc < COLS) board[br][bc] = currentPiece.color;
+          }
+        }
+      }
+
+      let completed = [];
+      for (let r=0; r<ROWS; r++) if (board[r].every(c => c !== EMPTY)) completed.push(r);
+
+      if (completed.length > 0) {
+        clearingRows = completed;
+        render();
+
+        let pts = LINE_SCORES[completed.length] || 0;
+        score += pts; lines += completed.length;
+        showScorePopup(pts);
+
+        let nLevel = Math.floor(lines / 10) + 1;
+        if (nLevel !== level) { level = nLevel; restartInterval(); }
+
+        setTimeout(() => {
+          for (let i = completed.length - 1; i >= 0; i--) {
+            board.splice(completed[i], 1);
+            board.unshift(Array(COLS).fill(EMPTY));
+          }
+          clearingRows = [];
+          spawnPiece();
+          render();
+        }, 400);
+      } else {
+        spawnPiece();
+        render();
+      }
+    }
+
+    function spawnPiece() {
+      currentPiece = nextPiece;
+      nextPiece = randomPiece();
+      pos = { row: 0, col: Math.floor((COLS - currentPiece.shape[0].length) / 2) };
+      if (!isValidPos(board, currentPiece.shape, pos.row, pos.col)) {
+        gameState = 'gameover';
+        clearInterval(dropInterval);
+      }
+    }
+
+    function movePiece(dRow, dCol) {
+      if (gameState !== 'playing' || clearingRows.length > 0) return;
+      if (isValidPos(board, currentPiece.shape, pos.row + dRow, pos.col + dCol)) {
+        pos.row += dRow; pos.col += dCol;
+        render();
+      } else if (dRow > 0 && dCol === 0) {
+        lockPiece();
+      }
+    }
+
+    function rotatePiece() {
+      if (gameState !== 'playing' || clearingRows.length > 0 || currentPiece.name === 'O') return;
+      let rotated = rotateMatrix(currentPiece.shape);
+      for (let [dx, dy] of WALL_KICKS) {
+        if (isValidPos(board, rotated, pos.row + dy, pos.col + dx)) {
+          currentPiece.shape = rotated; pos.row += dy; pos.col += dx;
+          render(); return;
+        }
+      }
+    }
+
+    function hardDrop() {
+      if (gameState !== 'playing' || clearingRows.length > 0) return;
+      let ghostR = pos.row;
+      while (isValidPos(board, currentPiece.shape, ghostR + 1, pos.col)) ghostR++;
+      pos.row = ghostR;
+      lockPiece();
+    }
+
+    function restartInterval() {
+      if (dropInterval) clearInterval(dropInterval);
+      dropInterval = setInterval(() => {
+        if (gameState === 'playing') movePiece(1, 0);
+      }, getSpeed(level));
+    }
+
+    function startGame() {
+      board = Array.from({length: ROWS}, () => Array(COLS).fill(EMPTY));
+      score = 0; lines = 0; level = 1; clearingRows = [];
+      nextPiece = randomPiece();
+      gameState = 'playing';
+      spawnPiece();
+      restartInterval();
+      render();
+    }
+
+    function togglePause() {
+      if (gameState === 'playing') { gameState = 'paused'; clearInterval(dropInterval); }
+      else if (gameState === 'paused') { gameState = 'playing'; restartInterval(); }
+      render();
+    }
+
+    // Controls
+    document.addEventListener('keydown', e => {
+      if (gameState === 'idle' || gameState === 'gameover') {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); startGame(); }
+        return;
+      }
+      if (e.key.toLowerCase() === 'p' || e.key === 'Escape') { e.preventDefault(); togglePause(); return; }
+      if (gameState !== 'playing') return;
+      switch(e.key) {
+        case 'ArrowLeft': e.preventDefault(); movePiece(0, -1); break;
+        case 'ArrowRight': e.preventDefault(); movePiece(0, 1); break;
+        case 'ArrowDown': e.preventDefault(); movePiece(1, 0); break;
+        case 'ArrowUp': e.preventDefault(); rotatePiece(); break;
+        case ' ': e.preventDefault(); hardDrop(); break;
+      }
+    });
+
+    const bindBtn = (id, action) => {
+      const el = document.getElementById(id);
+      el.addEventListener('touchstart', e => { e.preventDefault(); action(); }, {passive: false});
+      el.addEventListener('mousedown', e => { e.preventDefault(); action(); });
+    };
+
+    bindBtn('btn-up', rotatePiece);
+    bindBtn('btn-left', () => movePiece(0, -1));
+    bindBtn('btn-right', () => movePiece(0, 1));
+    bindBtn('btn-down', () => movePiece(1, 0));
+    bindBtn('btn-rotate', rotatePiece);
+    bindBtn('btn-drop', hardDrop);
+    
+    document.getElementById('btn-start').addEventListener('click', startGame);
+    document.getElementById('btn-restart-go').addEventListener('click', startGame);
+    document.getElementById('btn-restart-go').addEventListener('touchstart', e => { e.preventDefault(); startGame(); });
+    document.getElementById('btn-pause').addEventListener('click', togglePause);
+    document.getElementById('btn-reset').addEventListener('click', startGame);
+
+    // Initial render
+    render();
+  </script>
+</body>
+</html>
