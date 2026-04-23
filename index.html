@@ -383,7 +383,7 @@
     }
 
     // Helpers
-    const getSpeed = (lvl) => Math.max(100, 1000 - (lvl - 1) * 60);
+    const getSpeed = (lvl) => Math.max(80, 1000 - (lvl - 1) * 80);
     const randomPiece = () => {
       const name = PIECE_NAMES[Math.floor(Math.random() * PIECE_NAMES.length)];
       return { name, shape: TETROMINOES[name].shape.map(r => [...r]), color: TETROMINOES[name].color };
@@ -577,8 +577,8 @@
         score += pts; lines += completed.length;
         showScorePopup(pts);
 
-        let nLevel = Math.floor(lines / 10) + 1;
-        if (nLevel !== level) { level = nLevel; playSound('levelUp'); restartInterval(); }
+        let nLevel = Math.floor(score / 500) + 1;
+        if (nLevel > level) { level = nLevel; playSound('levelUp'); restartInterval(); }
 
         setTimeout(() => {
           for(let r of completed) board[r].fill(EMPTY);
