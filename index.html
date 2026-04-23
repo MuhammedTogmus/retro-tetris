@@ -549,17 +549,22 @@
       setTimeout(() => popup.remove(), 800);
     }
 
-    function lockPiece() {
-      if (!currentPiece) return;
-      for (let r=0; r<currentPiece.shape.length; r++) {
-        for (let c=0; c<currentPiece.shape[r].length; c++) {
-          if (currentPiece.shape[r][c]) {
-            let br = pos.row + r; let bc = pos.col + c;
-            if (br >= 0 && br < ROWS && bc >= 0 && bc < COLS) board[br][bc] = currentPiece.color;
+    function applyGravity() {
+      for (let c = 0; c < COLS; c++) {
+        let writeR = ROWS - 1;
+        for (let readR = ROWS - 1; readR >= 0; readR--) {
+          if (board[readR][c] !== EMPTY) {
+            if (writeR !== readR) {
+              board[writeR][c] = board[readR][c];
+              board[readR][c] = EMPTY;
+            }
+            writeR--;
           }
         }
       }
+    }
 
+    function resolveBoard(isCascade = false) {
       let completed = [];
       for (let r=0; r<ROWS; r++) if (board[r].every(c => c !== EMPTY)) completed.push(r);
 
@@ -576,19 +581,31 @@
         if (nLevel !== level) { level = nLevel; playSound('levelUp'); restartInterval(); }
 
         setTimeout(() => {
-          for (let i = completed.length - 1; i >= 0; i--) {
-            board.splice(completed[i], 1);
-            board.unshift(Array(COLS).fill(EMPTY));
-          }
+          for(let r of completed) board[r].fill(EMPTY);
           clearingRows = [];
-          spawnPiece();
+          applyGravity();
           render();
+          setTimeout(() => resolveBoard(true), 150);
         }, 400);
       } else {
-        playSound('lock');
+        if (!isCascade) playSound('lock');
         spawnPiece();
         render();
       }
+    }
+
+    function lockPiece() {
+      if (!currentPiece) return;
+      for (let r=0; r<currentPiece.shape.length; r++) {
+        for (let c=0; c<currentPiece.shape[r].length; c++) {
+          if (currentPiece.shape[r][c]) {
+            let br = pos.row + r; let bc = pos.col + c;
+            if (br >= 0 && br < ROWS && bc >= 0 && bc < COLS) board[br][bc] = currentPiece.color;
+          }
+        }
+      }
+      currentPiece = null;
+      resolveBoard(false);
     }
 
     function spawnPiece() {
@@ -605,7 +622,7 @@
     }
 
     function movePiece(dRow, dCol) {
-      if (gameState !== 'playing' || clearingRows.length > 0) return;
+      if (!currentPiece || gameState !== 'playing' || clearingRows.length > 0) return;
       if (isValidPos(board, currentPiece.shape, pos.row + dRow, pos.col + dCol)) {
         pos.row += dRow; pos.col += dCol;
         if (dRow === 0 || dCol === 0) playSound('move');
@@ -616,7 +633,7 @@
     }
 
     function rotatePiece() {
-      if (gameState !== 'playing' || clearingRows.length > 0 || currentPiece.name === 'O') return;
+      if (!currentPiece || gameState !== 'playing' || clearingRows.length > 0 || currentPiece.name === 'O') return;
       let rotated = rotateMatrix(currentPiece.shape);
       for (let [dx, dy] of WALL_KICKS) {
         if (isValidPos(board, rotated, pos.row + dy, pos.col + dx)) {
@@ -628,7 +645,7 @@
     }
 
     function hardDrop() {
-      if (gameState !== 'playing' || clearingRows.length > 0) return;
+      if (!currentPiece || gameState !== 'playing' || clearingRows.length > 0) return;
       let ghostR = pos.row;
       while (isValidPos(board, currentPiece.shape, ghostR + 1, pos.col)) ghostR++;
       pos.row = ghostR;
