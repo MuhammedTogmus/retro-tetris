@@ -180,9 +180,9 @@
           <div id="gameover-screen" class="game-over-overlay" style="display: none;">
             <div class="game-over-text">OYUN<br>BİTTİ</div>
             <div class="game-over-score">SKOR: <span id="go-score">0</span></div>
-            <div class="lb-section" style="border-top: 1px dashed rgba(255, 255, 255, 0.2);">
-              <div class="lb-title" style="color:#ffea00;">TOP 5 SKOR</div>
-              <ul class="lb-list" id="lb-list-go"></ul>
+            <div class="lb-section" style="border-top: 1px dashed rgba(255, 255, 255, 0.2); max-height: 120px; overflow-y: auto;">
+              <div class="lb-title" style="color:#ffea00;">TOP 20 SKOR</div>
+              <ul class="lb-list" id="lb-list-go" style="padding-right: 5px;"></ul>
             </div>
             <div class="game-over-restart" id="btn-restart-go">YENİDEN BAŞLA</div>
           </div>
@@ -215,9 +215,9 @@
               <div class="panel-label">SIRADAKİ</div>
               <div class="next-piece-grid" id="next-grid"></div>
             </div>
-            <div class="panel-section" style="margin-top: auto; padding-top: 8px; border-top: 1px dashed rgba(15, 56, 15, 0.4);">
-              <div class="panel-label" style="color: #ffea00; margin-bottom: 6px;">TOP 5</div>
-              <ul class="lb-list-side" id="lb-list-side" style="list-style: none; padding: 0; margin: 0; font-family: var(--font-pixel); font-size: 5px; color: var(--text-lcd);"></ul>
+            <div class="panel-section" style="margin-top: auto; padding-top: 4px; border-top: 1px dashed rgba(15, 56, 15, 0.4);">
+              <div class="panel-label" style="color: #ffea00; margin-bottom: 4px;">TOP 20</div>
+              <ul class="lb-list-side" id="lb-list-side" style="list-style: none; padding: 0; padding-right: 2px; margin: 0; font-family: var(--font-pixel); font-size: 4px; color: var(--text-lcd); max-height: 160px; overflow-y: auto; overflow-x: hidden;"></ul>
             </div>
           </div>
   
@@ -258,7 +258,7 @@
   <script>
     // Constants
     const ROWS = 20; const COLS = 10; const EMPTY = 0;
-    const PIECE_NAMES = ['I', 'O', 'T', 'S', 'Z', 'J', 'L'];
+    const PIECE_NAMES = ['I', 'O', 'T', 'S', 'Z', 'J', 'L', 'DOT', 'PLUS', 'U', 'SMALL_I', 'SMALL_L'];
     const LINE_SCORES = { 1: 100, 2: 300, 3: 500, 4: 800 };
     const TETROMINOES = {
       I: { shape: [[0,0,0,0], [1,1,1,1], [0,0,0,0], [0,0,0,0]], color: 'cyan' },
@@ -267,7 +267,12 @@
       S: { shape: [[0,1,1], [1,1,0], [0,0,0]], color: 'green' },
       Z: { shape: [[1,1,0], [0,1,1], [0,0,0]], color: 'red' },
       J: { shape: [[1,0,0], [1,1,1], [0,0,0]], color: 'blue' },
-      L: { shape: [[0,0,1], [1,1,1], [0,0,0]], color: 'orange' }
+      L: { shape: [[0,0,1], [1,1,1], [0,0,0]], color: 'orange' },
+      DOT: { shape: [[1]], color: 'cyan' },
+      PLUS: { shape: [[0,1,0], [1,1,1], [0,1,0]], color: 'red' },
+      U: { shape: [[1,0,1], [1,1,1], [0,0,0]], color: 'purple' },
+      SMALL_I: { shape: [[1,1], [0,0]], color: 'yellow' },
+      SMALL_L: { shape: [[1,0], [1,1]], color: 'green' }
     };
     const WALL_KICKS = [[0,0], [-1,0], [1,0], [0,-1], [-2,0], [2,0]];
 
@@ -292,7 +297,8 @@
 
     const fetchLeaderboard = async () => {
       try {
-        const res = await fetch(`http://dreamlo.com/lb/${DREAMLO_PUBLIC}/json?t=${Date.now()}`);
+        const url = `http://dreamlo.com/lb/${DREAMLO_PUBLIC}/json?t=${Date.now()}`;
+        const res = await fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`);
         const data = await res.json();
         let entries = [];
         if (data && data.dreamlo && data.dreamlo.leaderboard && data.dreamlo.leaderboard.entry) {
@@ -300,7 +306,7 @@
           if (!Array.isArray(raw)) raw = [raw];
           entries = raw.map(e => ({ name: e.name, score: parseInt(e.score) }));
         }
-        globalLeaderboard = entries.slice(0, 5);
+        globalLeaderboard = entries.slice(0, 20);
         lbLoaded = true;
         renderLeaderboards();
       } catch (err) {
@@ -314,7 +320,8 @@
       if (s === 0) return;
       try {
         // Optimistic UI update can be done here, but Dreamlo updates fast enough
-        await fetch(`http://dreamlo.com/lb/${DREAMLO_PRIVATE}/add/${encodeURIComponent(name || 'ANON')}/${s}`);
+        const url = `http://dreamlo.com/lb/${DREAMLO_PRIVATE}/add/${encodeURIComponent(name || 'ANON')}/${s}`;
+        await fetch(`https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`);
         await fetchLeaderboard();
       } catch (err) {
         console.error('Score save error:', err);
@@ -323,8 +330,8 @@
 
     const renderLeaderboards = () => {
       const lb = globalLeaderboard;
-      const htmlGo = lb.map((i, idx) => `<li class="lb-item"><span>${idx+1}. ${i.name}</span><span>${i.score}</span></li>`).join('');
-      const htmlSide = lb.map((i, idx) => `<li style="display:flex; justify-content:space-between; margin-bottom:5px; opacity:0.9;"><span>${idx+1}.${i.name.substring(0,5)}</span><span style="color:#ffea00">${i.score}</span></li>`).join('');
+      const htmlGo = lb.map((i, idx) => `<li class="lb-item" style="margin-bottom:2px; font-size:4px;"><span>${idx+1}. ${i.name}</span><span>${i.score}</span></li>`).join('');
+      const htmlSide = lb.map((i, idx) => `<li style="display:flex; justify-content:space-between; margin-bottom:3px; opacity:0.9;"><span>${idx+1}.${i.name.substring(0,5)}</span><span style="color:#ffea00">${i.score}</span></li>`).join('');
       
       const emptyMsgGo = lbLoaded ? '<li class="lb-item" style="text-align:center;">KAYIT YOK</li>' : '<li class="lb-item" style="text-align:center; color:#00e5ff;">YÜKLENİYOR...</li>';
       const emptyMsgSide = lbLoaded ? '<li style="text-align:center; opacity:0.5;">YOK</li>' : '<li style="text-align:center; opacity:0.8; color:#00e5ff;">...</li>';
